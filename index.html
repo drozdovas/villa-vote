@@ -1,0 +1,449 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Italy Villa Vote — Summer Holiday</title>
+<style>
+  :root {
+    --bg: #f7f5f0;
+    --card: #ffffff;
+    --ink: #2b2b2b;
+    --muted: #71716b;
+    --accent: #0d7a5f;
+    --accent-soft: #e3f2ec;
+    --gold: #b8860b;
+    --border: #e6e2d8;
+    --danger: #b04a3a;
+  }
+  * { box-sizing: border-box; margin: 0; padding: 0; }
+  body {
+    font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif;
+    background: var(--bg);
+    color: var(--ink);
+    line-height: 1.5;
+  }
+  header {
+    text-align: center;
+    padding: 40px 20px 12px;
+  }
+  header h1 { font-size: 1.9rem; letter-spacing: -0.02em; }
+  header p { color: var(--muted); margin-top: 6px; }
+
+  .voter-bar {
+    position: sticky;
+    top: 0;
+    z-index: 20;
+    background: rgba(247, 245, 240, 0.95);
+    backdrop-filter: blur(6px);
+    border-bottom: 1px solid var(--border);
+    padding: 12px 20px;
+    display: flex;
+    flex-wrap: wrap;
+    gap: 10px;
+    justify-content: center;
+    align-items: center;
+  }
+  .voter-bar label { font-weight: 600; }
+  .voter-bar input {
+    padding: 9px 14px;
+    border: 1px solid var(--border);
+    border-radius: 8px;
+    font-size: 1rem;
+    min-width: 200px;
+    background: #fff;
+  }
+  .voter-bar input:focus { outline: 2px solid var(--accent); border-color: transparent; }
+  .voter-bar .hint { color: var(--muted); font-size: 0.85rem; width: 100%; text-align: center; }
+  .sync {
+    font-size: 0.78rem;
+    padding: 4px 12px;
+    border-radius: 20px;
+    font-weight: 600;
+    background: #eee;
+    color: var(--muted);
+  }
+  .sync.ok { background: var(--accent-soft); color: var(--accent); }
+  .sync.bad { background: #f7e5e1; color: var(--danger); }
+
+  .leaderboard {
+    max-width: 1160px;
+    margin: 20px auto 0;
+    padding: 0 20px;
+  }
+  .leaderboard-box {
+    background: var(--card);
+    border: 1px solid var(--border);
+    border-radius: 12px;
+    padding: 16px 20px;
+  }
+  .leaderboard-box h2 { font-size: 1.05rem; margin-bottom: 10px; }
+  .lb-row { display: flex; align-items: center; gap: 10px; padding: 4px 0; font-size: 0.95rem; }
+  .lb-name { flex: 0 0 auto; min-width: 180px; font-weight: 600; }
+  .lb-bar-track { flex: 1; background: var(--accent-soft); border-radius: 6px; height: 18px; overflow: hidden; }
+  .lb-bar { background: var(--accent); height: 100%; border-radius: 6px; transition: width 0.4s ease; }
+  .lb-count { flex: 0 0 auto; min-width: 130px; color: var(--muted); font-size: 0.85rem; text-align: right; }
+  .lb-empty { color: var(--muted); font-style: italic; }
+  .copy-btn {
+    margin-top: 12px;
+    background: none;
+    border: 1px solid var(--accent);
+    color: var(--accent);
+    padding: 8px 16px;
+    border-radius: 8px;
+    font-size: 0.9rem;
+    cursor: pointer;
+  }
+  .copy-btn:hover { background: var(--accent-soft); }
+
+  .grid {
+    max-width: 1160px;
+    margin: 24px auto 60px;
+    padding: 0 20px;
+    display: grid;
+    grid-template-columns: repeat(auto-fill, minmax(330px, 1fr));
+    gap: 24px;
+  }
+  .card {
+    background: var(--card);
+    border: 1px solid var(--border);
+    border-radius: 14px;
+    overflow: hidden;
+    display: flex;
+    flex-direction: column;
+    transition: box-shadow 0.2s ease, transform 0.2s ease;
+  }
+  .card:hover { box-shadow: 0 8px 24px rgba(0,0,0,0.09); transform: translateY(-2px); }
+  .card.voted-by-me { outline: 3px solid var(--accent); }
+
+  .card-img { position: relative; aspect-ratio: 16 / 10; background: #ddd; }
+  .card-img img { width: 100%; height: 100%; object-fit: cover; display: block; }
+  .score-badge {
+    position: absolute; top: 10px; left: 10px;
+    background: rgba(20, 20, 20, 0.8);
+    color: #fff;
+    font-weight: 700;
+    padding: 4px 10px;
+    border-radius: 20px;
+    font-size: 0.85rem;
+  }
+  .rank-badge {
+    position: absolute; top: 10px; right: 10px;
+    background: var(--gold);
+    color: #fff;
+    font-weight: 700;
+    padding: 4px 10px;
+    border-radius: 20px;
+    font-size: 0.8rem;
+  }
+  .eliminated .card-img img { filter: grayscale(0.55); }
+
+  .card-body { padding: 16px 18px 18px; display: flex; flex-direction: column; flex: 1; gap: 8px; }
+  .card-body h3 { font-size: 1.12rem; letter-spacing: -0.01em; }
+  .card-body h3 a { color: var(--ink); text-decoration: none; }
+  .card-body h3 a:hover { color: var(--accent); text-decoration: underline; }
+  .location { color: var(--muted); font-size: 0.9rem; }
+
+  .stats { display: flex; flex-wrap: wrap; gap: 6px; margin-top: 2px; }
+  .stat {
+    background: var(--bg);
+    border: 1px solid var(--border);
+    border-radius: 6px;
+    padding: 3px 9px;
+    font-size: 0.8rem;
+    color: var(--ink);
+    white-space: nowrap;
+  }
+  .rec { font-size: 0.85rem; font-weight: 600; color: var(--accent); }
+  .rec.negative { color: var(--danger); }
+  .notes { font-size: 0.87rem; color: var(--muted); flex: 1; }
+
+  .vote-row { display: flex; align-items: center; gap: 12px; margin-top: 8px; }
+  .vote-btn {
+    flex: 1;
+    background: var(--accent);
+    color: #fff;
+    border: none;
+    border-radius: 9px;
+    padding: 11px 0;
+    font-size: 0.97rem;
+    font-weight: 700;
+    cursor: pointer;
+    transition: background 0.15s ease;
+  }
+  .vote-btn:hover { background: #0a6650; }
+  .vote-btn.mine { background: var(--danger); }
+  .vote-count { font-weight: 700; font-size: 1rem; min-width: 70px; text-align: right; }
+  .vote-count span { color: var(--muted); font-weight: 400; font-size: 0.8rem; }
+  .voters { font-size: 0.78rem; color: var(--muted); min-height: 1.1em; }
+
+  .toast {
+    position: fixed; bottom: 24px; left: 50%; transform: translateX(-50%);
+    background: #222; color: #fff; padding: 10px 22px; border-radius: 30px;
+    font-size: 0.9rem; opacity: 0; pointer-events: none; transition: opacity 0.3s ease;
+    z-index: 50;
+  }
+  .toast.show { opacity: 1; }
+
+  footer { text-align: center; color: var(--muted); font-size: 0.8rem; padding: 0 20px 40px; }
+</style>
+</head>
+<body>
+
+<header>
+  <h1>🇮🇹 Summer Holiday Villa Vote</h1>
+  <p>15 shortlisted villas &middot; ranked by our weighted score &middot; click a photo or title to open the Airbnb listing</p>
+</header>
+
+<div class="voter-bar">
+  <label for="voterName">Your name:</label>
+  <input id="voterName" type="text" placeholder="e.g. Dmitrijus" autocomplete="off">
+  <span class="sync" id="syncStatus">⏳ connecting…</span>
+  <div class="hint">Type your name, then hit <strong>Vote</strong> on every villa you like — multiple picks allowed. Tap again to unvote. Votes sync live for everyone viewing this page.</div>
+</div>
+
+<div class="leaderboard">
+  <div class="leaderboard-box">
+    <h2>🏆 Current standings</h2>
+    <div id="lbRows"><div class="lb-empty">No votes yet — be the first!</div></div>
+    <button class="copy-btn" id="copyResults">📋 Copy results to share</button>
+  </div>
+</div>
+
+<main class="grid" id="grid"></main>
+
+<div class="toast" id="toast"></div>
+
+<footer>
+  Votes sync live through a shared store — send this file to the family and everyone's votes appear here automatically. If the sync badge shows offline, votes are kept on this device and “Copy results” still works.
+</footer>
+
+<script>
+const VENUES = [
+ {id:"3", name:"Villa La Fonte 14", url:"https://www.airbnb.co.uk/rooms/15295005", image:"https://a0.muscache.com/im/pictures/prohost-api/Hosting-15295005/original/2516eb5b-26d0-4619-b28f-181544a0c69a.jpeg?im_w=720&width=720&quality=70&auto=webp", score:"8.7", region:"Marche", town:"Ripatransone", guests:"18", bedrooms:"7", beds:"14", baths:"10", rating:"4.96", reviews:"23", sea:"15 min drive to Adriatic", rec:"Best overall candidate", notes:"Sea view, strong layout, bathrooms, chef option; external stairs to consider.", eliminated:false},
+ {id:"11", name:"Villa Anna Maria", url:"https://www.airbnb.co.uk/rooms/51140359", image:"https://a0.muscache.com/im/pictures/prohost-api/Hosting-51140359/original/3d52a4ac-f64c-4d98-9cca-e42e1445d1ac.jpeg?im_w=720&width=720&quality=70&auto=webp", score:"8.2", region:"Marche", town:"Monteprandone", guests:"15", bedrooms:"7", beds:"8", baths:"6", rating:"5.00", reviews:"6", sea:"15 min to San Benedetto", rec:"Top 5 but capacity exact", notes:"Elegant and sea-close; exact bed fit for 7 kids needs checking.", eliminated:false},
+ {id:"8", name:"Panoramic villa with pool and gym", url:"https://www.airbnb.co.uk/rooms/34923172", image:"https://a0.muscache.com/im/pictures/cc299867-33c5-4653-a0c4-f1b47c9dbe81.jpg?im_w=720&width=720&quality=70&auto=webp", score:"8.0", region:"Marche", town:"Grottammare area", guests:"16", bedrooms:"6", beds:"13", baths:"4.5", rating:"4.75", reviews:"4", sea:"2.3 km from sea", rec:"Top 5 if bedroom sharing acceptable", notes:"Closest good sea option, great activity space, but 6 bedrooms.", eliminated:false},
+ {id:"9", name:"Miralento Country House", url:"https://www.airbnb.co.uk/rooms/592832603850741553", image:"https://a0.muscache.com/im/pictures/prohost-api/Hosting-592832603850741553/original/f942756f-cc82-4944-b6b3-9b49c6546938.jpeg?im_w=720&width=720&quality=70&auto=webp", score:"7.8", region:"Campania / Cilento Coast", town:"Rutino", guests:"16", bedrooms:"7", beds:"11", baths:"6.5", rating:"5.00", reviews:"13", sea:"15 km beach/sea/lake", rec:"Top 5", notes:"Warm region, sea/mountain views, kids playhouse; no chef mentioned.", eliminated:false},
+ {id:"1", name:"Villa Podere Cerretino", url:"https://www.airbnb.co.uk/rooms/36401035", image:"https://a0.muscache.com/im/pictures/miso/Hosting-36401035/original/fc18ca41-bb6f-41ae-982b-d45170a913cc.jpeg?im_w=720&width=720&quality=70&auto=webp", score:"7.5", region:"Tuscany", town:"Poppi", guests:"20", bedrooms:"7", beds:"10", baths:"4", rating:"5.00", reviews:"64", sea:"Inland — not near sea", rec:"Top 3", notes:"Excellent privacy for four families; not near sea.", eliminated:false},
+ {id:"12", name:"Villa Paradiso", url:"https://www.airbnb.co.uk/rooms/42519726", image:"https://a0.muscache.com/im/pictures/prohost-api/Hosting-42519726/original/e4f81f17-789f-4e97-9075-3ad190e91834.jpeg?im_w=720&width=720&quality=70&auto=webp", score:"7.5", region:"Campania / Cilento Coast", town:"Laureana Cilento", guests:"14", bedrooms:"6", beds:"8", baths:"4", rating:"5.00", reviews:"46", sea:"5-6 km to beach", rec:"Eliminated — max 14 guests", notes:"Lovely, but listed maximum is 14 guests.", eliminated:true},
+ {id:"2", name:"Villa Casacheta — by Happy Rentals", url:"https://www.airbnb.co.uk/rooms/51570433", image:"https://a0.muscache.com/im/pictures/hosting/Hosting-51570433/original/800a0ce4-eeb0-4576-a6ef-54f05f695478.jpeg?im_w=720&width=720&quality=70&auto=webp", score:"7.2", region:"Tuscany", town:"Montaione", guests:"17", bedrooms:"8", beds:"12", baths:"8", rating:"4.85", reviews:"20", sea:"~1 hr to Marina di Pisa", rec:"Top 5", notes:"Great family privacy and bathrooms; sea is a day trip.", eliminated:false},
+ {id:"10", name:"Tenuta Collerucci", url:"https://www.airbnb.co.uk/rooms/53425093", image:"https://a0.muscache.com/im/pictures/miso/Hosting-53425093/original/2bdf7f60-1472-4547-a6c3-1823866612ad.jpeg?im_w=720&width=720&quality=70&auto=webp", score:"7.2", region:"Tuscany", town:"Montaione", guests:"22", bedrooms:"10", beds:"?", baths:"9", rating:"5.00", reviews:"5", sea:"~1 hr+ to coast", rec:"Top 5 / compare with Casacheta", notes:"Great 4-apartment structure; exact beds count absent on page.", eliminated:false},
+ {id:"13", name:"Villa Sole", url:"https://www.airbnb.co.uk/rooms/919937278778228935", image:"https://a0.muscache.com/im/pictures/prohost-api/Hosting-919937278778228935/original/41d07c53-8a30-472b-bcd6-4706d4651bb5.jpeg?im_w=720&width=720&quality=70&auto=webp", score:"7.0", region:"Campania / Cilento Coast", town:"Scario", guests:"14", bedrooms:"6", beds:"10", baths:"6", rating:"5.00", reviews:"2", sea:"50 m to beach!", rec:"Eliminated — max 14 & toddler safety", notes:"Great sea access but unsafe/tight for toddlers and max 14.", eliminated:true},
+ {id:"4", name:"Villa Ferria", url:"https://www.airbnb.co.uk/rooms/1132512653025538493", image:"https://a0.muscache.com/im/pictures/prohost-api/Hosting-1132512653025538493/original/9daebbb4-b61f-4051-aeba-20a0e35227fe.jpeg?im_w=720&width=720&quality=70&auto=webp", score:"6.8", region:"Calabria", town:"Olivadi / Catanzaro", guests:"15", bedrooms:"5", beds:"10", baths:"5", rating:"5.00", reviews:"3", sea:"15 km to Soverato beach", rec:"Consider if price/value strong", notes:"Warmer region and sea view; bedroom count may be tight.", eliminated:false},
+ {id:"5", name:"Lucaraia", url:"https://www.airbnb.co.uk/rooms/22137224", image:"https://a0.muscache.com/im/pictures/prohost-api/Hosting-22137224/original/045d0c0f-b070-475e-806e-5c69ee2a4091.jpeg?im_w=720&width=720&quality=70&auto=webp", score:"6.8", region:"Marche", town:"Apecchio", guests:"27", bedrooms:"10", beds:"18", baths:"11", rating:"5.00", reviews:"1", sea:"70 km to Fano beaches", rec:"Remote backup", notes:"Massive capacity and pro kitchen, but sea is far.", eliminated:false},
+ {id:"14", name:"Nice home in Apecchio (PU)", url:"https://www.airbnb.co.uk/rooms/39449169", image:"https://a0.muscache.com/im/pictures/prohost-api/Hosting-39449169/original/ddf3e0c1-61bd-4e40-8638-9cb5771346e8.jpeg?im_w=720&width=720&quality=70&auto=webp", score:"6.8", region:"Marche", town:"Piobbico / Apecchio", guests:"16", bedrooms:"8", beds:"11", baths:"6", rating:"4.85", reviews:"20", sea:"65 km to Pesaro/Fano", rec:"Remote backup", notes:"Excellent fenced grounds and common areas; too far from sea.", eliminated:false},
+ {id:"7", name:"Nice home in Fivizzano", url:"https://www.airbnb.co.uk/rooms/851883732669296888", image:"https://a0.muscache.com/im/pictures/prohost-api/Hosting-851883732669296888/original/b751496d-10d2-454a-ada0-641cf9e85004.jpeg?im_w=720&width=720&quality=70&auto=webp", score:"6.6", region:"Tuscany", town:"Fivizzano", guests:"16", bedrooms:"7", beds:"11", baths:"4", rating:"5.00", reviews:"5", sea:"35 km to sea/lake", rec:"Middle candidate", notes:"Good family capacity; not close to sea.", eliminated:false},
+ {id:"6", name:"Val Del Lago", url:"https://www.airbnb.co.uk/rooms/22137014", image:"https://a0.muscache.com/im/pictures/prohost-api/Hosting-22137014/original/8cb69b64-1648-4e9d-992f-b1cb8ca4b3b2.jpeg?im_w=720&width=720&quality=70&auto=webp", score:"6.3", region:"Marche", town:"Apecchio", guests:"19", bedrooms:"9", beds:"14", baths:"6", rating:"4.40", reviews:"10", sea:"70 km to Fano beaches", rec:"Probably eliminate unless cheap", notes:"Large but lower rating and very far from sea.", eliminated:false},
+ {id:"15", name:"Formiconcino", url:"https://www.airbnb.co.uk/rooms/22137454", image:"https://a0.muscache.com/im/pictures/prohost-api/Hosting-22137454/original/a4f7feef-8ead-499d-ba25-60ab51358df9.jpeg?im_w=720&width=720&quality=70&auto=webp", score:"5.9", region:"Lazio / Tuscia", town:"Tuscania", guests:"14", bedrooms:"7", beds:"7", baths:"8", rating:"4.11", reviews:"9", sea:"15 km to Marina Velca", rec:"Eliminated — capacity & cleanliness", notes:"Capacity and cleanliness concerns.", eliminated:true}
+];
+
+const STORAGE_KEY = 'villaVotes2026';
+// Shared vote store — Google Apps Script web app writing to the family Google Sheet.
+const WEB_APP_URL = 'https://script.google.com/macros/s/AKfycbwcxwIyD1IpK2VP3eBfE_IW1Hqgp71_Dmc7DWlVSNJVbs5QKJ2v7fkf5N1txLkUmYM0/exec';
+const POLL_MS = 8000;
+
+// votes: { voterName: [venueId, ...] } — in-memory state, mirrored to localStorage as offline fallback
+let votes = normalize(loadLocal());
+
+// Accepts both the old single-pick format (string) and the new multi-pick format (array)
+function normalize(v) {
+  const out = {};
+  for (const [name, val] of Object.entries(v || {})) {
+    out[name] = Array.isArray(val) ? val.map(String) : [String(val)];
+  }
+  return out;
+}
+
+function loadLocal() {
+  try { return JSON.parse(localStorage.getItem(STORAGE_KEY)) || {}; }
+  catch (e) { return {}; }
+}
+function saveLocal() { localStorage.setItem(STORAGE_KEY, JSON.stringify(votes)); }
+
+function setSyncStatus(state) {
+  const el = document.getElementById('syncStatus');
+  if (state === 'ok') { el.className = 'sync ok'; el.textContent = '🟢 live sync'; }
+  else if (state === 'bad') { el.className = 'sync bad'; el.textContent = '🔴 offline — votes saved on this device'; }
+  else { el.className = 'sync'; el.textContent = '⏳ connecting…'; }
+}
+
+async function fetchRemote() {
+  const res = await fetch(WEB_APP_URL + '?_=' + Date.now());
+  if (!res.ok) throw new Error('read failed: ' + res.status);
+  const data = await res.json();
+  return normalize(data.votes);
+}
+
+async function pushRemote(name) {
+  // string body keeps it a "simple" CORS request (no preflight needed)
+  const res = await fetch(WEB_APP_URL, {
+    method: 'POST',
+    body: JSON.stringify({ name: name, villas: votes[name] || [] })
+  });
+  if (!res.ok) throw new Error('write failed: ' + res.status);
+  const data = await res.json();
+  return normalize(data.votes);
+}
+
+async function refresh() {
+  if (WEB_APP_URL.startsWith('__')) { setSyncStatus('bad'); return; }
+  try {
+    const remote = await fetchRemote();
+    const changed = JSON.stringify(remote) !== JSON.stringify(votes);
+    votes = remote;
+    saveLocal();
+    setSyncStatus('ok');
+    if (changed) render();
+  } catch (e) {
+    setSyncStatus('bad');
+  }
+}
+
+const grid = document.getElementById('grid');
+const toast = document.getElementById('toast');
+let toastTimer;
+
+function showToast(msg) {
+  toast.textContent = msg;
+  toast.classList.add('show');
+  clearTimeout(toastTimer);
+  toastTimer = setTimeout(() => toast.classList.remove('show'), 2200);
+}
+
+function currentVoter() {
+  return document.getElementById('voterName').value.trim();
+}
+
+function votesByVenue() {
+  const map = {};
+  for (const [voter, ids] of Object.entries(votes)) {
+    for (const id of ids) (map[id] = map[id] || []).push(voter);
+  }
+  return map;
+}
+
+function render() {
+  const byVenue = votesByVenue();
+  const me = currentVoter();
+  const myVotes = votes[me] || [];
+
+  grid.innerHTML = '';
+  VENUES.forEach((v, i) => {
+    const voters = byVenue[v.id] || [];
+    const isMine = me && myVotes.includes(v.id);
+    const card = document.createElement('article');
+    card.className = 'card' + (v.eliminated ? ' eliminated' : '') + (isMine ? ' voted-by-me' : '');
+    card.innerHTML = `
+      <a class="card-img" href="${v.url}" target="_blank" rel="noopener">
+        <img src="${v.image}" alt="${v.name}" loading="lazy">
+        <span class="score-badge">★ ${v.score}</span>
+        ${i < 3 ? `<span class="rank-badge">#${i + 1} pick</span>` : ''}
+      </a>
+      <div class="card-body">
+        <h3><a href="${v.url}" target="_blank" rel="noopener">${v.name}</a></h3>
+        <div class="location">📍 ${v.town}, ${v.region}</div>
+        <div class="stats">
+          <span class="stat">👥 ${v.guests} guests</span>
+          <span class="stat">🛏 ${v.bedrooms} bed&shy;rooms / ${v.beds} beds</span>
+          <span class="stat">🛁 ${v.baths} baths</span>
+          <span class="stat">⭐ ${v.rating} (${v.reviews})</span>
+          <span class="stat">🌊 ${v.sea}</span>
+        </div>
+        <div class="rec ${v.eliminated ? 'negative' : ''}">${v.rec}</div>
+        <div class="notes">${v.notes}</div>
+        <div class="vote-row">
+          <button class="vote-btn ${isMine ? 'mine' : ''}" data-id="${v.id}">
+            ${isMine ? '✓ Voted — tap to unvote' : '🗳 Vote for this villa'}
+          </button>
+          <div class="vote-count">${voters.length} <span>vote${voters.length === 1 ? '' : 's'}</span></div>
+        </div>
+        <div class="voters">${voters.length ? '🙋 ' + voters.join(', ') : ''}</div>
+      </div>`;
+    grid.appendChild(card);
+  });
+
+  grid.querySelectorAll('.vote-btn').forEach(btn => {
+    btn.addEventListener('click', () => vote(btn.dataset.id));
+  });
+
+  renderLeaderboard(byVenue);
+}
+
+function renderLeaderboard(byVenue) {
+  const rows = document.getElementById('lbRows');
+  const entries = VENUES
+    .map(v => ({ v, voters: byVenue[v.id] || [] }))
+    .filter(e => e.voters.length > 0)
+    .sort((a, b) => b.voters.length - a.voters.length);
+
+  if (!entries.length) {
+    rows.innerHTML = '<div class="lb-empty">No votes yet — be the first!</div>';
+    return;
+  }
+  const max = entries[0].voters.length;
+  rows.innerHTML = entries.map(e => `
+    <div class="lb-row">
+      <div class="lb-name">${e.v.name}</div>
+      <div class="lb-bar-track"><div class="lb-bar" style="width:${(e.voters.length / max) * 100}%"></div></div>
+      <div class="lb-count">${e.voters.length} — ${e.voters.join(', ')}</div>
+    </div>`).join('');
+}
+
+async function vote(venueId) {
+  const me = currentVoter();
+  if (!me) {
+    showToast('Please type your name first ☝️');
+    document.getElementById('voterName').focus();
+    return;
+  }
+  // Read latest shared state first so we never clobber someone else's fresh vote
+  let synced = true;
+  if (!WEB_APP_URL.startsWith('__')) {
+    try { votes = await fetchRemote(); }
+    catch (e) { synced = false; }
+  } else { synced = false; }
+
+  const venue = VENUES.find(v => v.id === venueId);
+  const mine = votes[me] || [];
+  if (mine.includes(venueId)) {
+    votes[me] = mine.filter(id => id !== venueId);
+    showToast(`Removed ${venue.name} from your picks`);
+  } else {
+    votes[me] = [...mine, venueId];
+    showToast(`${me} voted for ${venue.name} 🎉`);
+  }
+  saveLocal();
+  render();
+
+  if (synced) {
+    try { votes = await pushRemote(me); saveLocal(); render(); setSyncStatus('ok'); }
+    catch (e) { synced = false; }
+  }
+  if (!synced) {
+    setSyncStatus('bad');
+    showToast('⚠️ Not synced — vote saved on this device only');
+  }
+}
+
+document.getElementById('copyResults').addEventListener('click', () => {
+  const byVenue = votesByVenue();
+  const entries = VENUES
+    .map(v => ({ v, voters: byVenue[v.id] || [] }))
+    .filter(e => e.voters.length > 0)
+    .sort((a, b) => b.voters.length - a.voters.length);
+  if (!entries.length) { showToast('No votes to copy yet'); return; }
+  const text = '🇮🇹 Villa vote results:\n' + entries.map(e =>
+    `${e.voters.length} vote${e.voters.length === 1 ? '' : 's'} — ${e.v.name} (${e.voters.join(', ')})\n${e.v.url}`
+  ).join('\n');
+  navigator.clipboard.writeText(text)
+    .then(() => showToast('Results copied — paste into the family chat!'))
+    .catch(() => showToast('Copy failed — select and copy manually'));
+});
+
+document.getElementById('voterName').addEventListener('input', render);
+render();
+refresh();
+setInterval(() => { if (document.visibilityState === 'visible') refresh(); }, POLL_MS);
+</script>
+</body>
+</html>
