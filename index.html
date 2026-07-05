@@ -156,6 +156,10 @@
     background: rgba(20, 20, 20, 0.65); color: #fff;
     padding: 2px 10px; border-radius: 20px; font-size: 0.72rem; font-weight: 600;
   }
+  .card-img img.wipe-left { animation: wipeInLeft 0.25s ease; }
+  .card-img img.wipe-right { animation: wipeInRight 0.25s ease; }
+  @keyframes wipeInLeft { from { transform: translateX(28px); opacity: 0.4; } }
+  @keyframes wipeInRight { from { transform: translateX(-28px); opacity: 0.4; } }
 
   .card-body { padding: 16px 18px 18px; display: flex; flex-direction: column; flex: 1; gap: 8px; }
   .card-body h3 { font-size: 1.12rem; letter-spacing: -0.01em; }
@@ -341,10 +345,15 @@ function getIdx(v) {
 }
 function stepGallery(id, dir) {
   const v = VENUES.find(x => x.id === id);
+  if (v.images.length < 2) return;
   galleryIdx[id] = getIdx(v) + dir;
   const idx = getIdx(v);
   const wrap = grid.querySelector(`[data-gal="${id}"]`);
-  wrap.querySelector('img').src = v.images[idx];
+  const img = wrap.querySelector('img');
+  img.src = v.images[idx];
+  img.classList.remove('wipe-left', 'wipe-right');
+  void img.offsetWidth;   // restart the animation even on rapid steps
+  img.classList.add(dir > 0 ? 'wipe-left' : 'wipe-right');
   wrap.querySelector('.gal-count').textContent = `${idx + 1} / ${v.images.length}`;
   // warm up the next image in the browsing direction so flicking through feels instant
   new Image().src = v.images[(((idx + dir) % v.images.length) + v.images.length) % v.images.length];
@@ -411,6 +420,27 @@ function render() {
       e.preventDefault();
       e.stopPropagation();
       stepGallery(btn.dataset.id, Number(btn.dataset.dir));
+    });
+  });
+
+  // Swipe left/right on the photo to browse the gallery (a swipe must not open the Airbnb link)
+  grid.querySelectorAll('.card-img').forEach(a => {
+    let startX = 0, startY = 0, swiped = false;
+    a.addEventListener('touchstart', e => {
+      startX = e.touches[0].clientX;
+      startY = e.touches[0].clientY;
+      swiped = false;
+    }, { passive: true });
+    a.addEventListener('touchend', e => {
+      const dx = e.changedTouches[0].clientX - startX;
+      const dy = e.changedTouches[0].clientY - startY;
+      if (Math.abs(dx) > 40 && Math.abs(dx) > Math.abs(dy) * 1.5) {
+        swiped = true;
+        stepGallery(a.dataset.gal, dx < 0 ? 1 : -1);
+      }
+    }, { passive: true });
+    a.addEventListener('click', e => {
+      if (swiped) { e.preventDefault(); swiped = false; }
     });
   });
 
